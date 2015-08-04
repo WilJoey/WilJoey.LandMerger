@@ -7,7 +7,7 @@ using WilJoey.LandMerger.Core;
 namespace WilJoey.LandMerger.CoreTests
 {
     [TestFixture]
-    public class MergerTests
+    public class CustomDataMergerTests
     {
         [Test]
         public void TwoPieces_兩個多邊形有交集()
@@ -30,7 +30,7 @@ namespace WilJoey.LandMerger.CoreTests
                 new Coordinate(2, 1)
             };
             var p2 = new Polygon(coords2);
-            var merger = new Merger();
+            var merger = new MergerCustom();
             var result = merger.TwoPieces(p1, p2, null, null);
 
             Assert.NotNull(result);
@@ -59,7 +59,7 @@ namespace WilJoey.LandMerger.CoreTests
             };
             var p2 = new Polygon(coords2);
 
-            var merger = new Merger();
+            var merger = new MergerCustom();
             var result = merger.TwoPieces(p1, p2, null, null);
 
             Assert.NotNull(result);
@@ -88,7 +88,7 @@ namespace WilJoey.LandMerger.CoreTests
             };
             var line2 = new LineString(coords2);
 
-            var merger = new Merger();
+            var merger = new MergerCustom();
             var result = merger.GetConvexHull(line1, line2);
 
             Assert.NotNull(result);
