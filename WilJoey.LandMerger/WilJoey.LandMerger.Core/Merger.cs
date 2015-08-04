@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DotSpatial.Topology;
-using DotSpatial.Topology.Algorithm;
 using WilJoey.LandMerger.Core.Entity;
 
 namespace WilJoey.LandMerger.Core
@@ -11,35 +9,27 @@ namespace WilJoey.LandMerger.Core
     public class Merger
     {
         private readonly double _tolerance = 0.3;
-        //private readonly List<MapBox> MapBoxs;
         public List<MapBox> MapBoxs { get; set; }
-        /// <summary>
-        /// 圖幅框清單
-        /// </summary>
-        //private readonly List<Boundary> _boundaries;
 
         public Merger(List<Boundary> boundaries)
         {
-            //_boundaries = boundaries;
-
             MapBoxs = SetupMapBox(boundaries);
-            
         }
 
         private List<MapBox> SetupMapBox(List<Boundary> boundaries)
         {
             var mapBoxs = boundaries.Select(x => new MapBox
             {
-                Code=x.FullCode,
+                Code = x.FullCode,
                 Points = x.BorderLine,
                 Extents = x.Extents,
                 Box = new Polygon(x.BorderLine)
             }).ToList();
 
-            var avgX = mapBoxs.Average(x => (x.Box.Envelope.Right() - x.Box.Envelope.Left())/2);
-            var avgY = mapBoxs.Average(x => (x.Box.Envelope.Top() - x.Box.Envelope.Bottom())/2);
+            var avgX = mapBoxs.Average(x => (x.Box.Envelope.Right() - x.Box.Envelope.Left()) / 2);
+            var avgY = mapBoxs.Average(x => (x.Box.Envelope.Top() - x.Box.Envelope.Bottom()) / 2);
             //對角線長度
-            var diagonal = Math.Sqrt(avgX*avgX + avgY*avgY)*0.9;
+            var diagonal = Math.Sqrt(avgX * avgX + avgY * avgY) * 0.9;
             avgX *= 1.1;
             avgY *= 1.1;
 
@@ -48,14 +38,13 @@ namespace WilJoey.LandMerger.Core
                 mapBox.Neighbors = mapBoxs.Where(x =>
                     Math.Abs(x.Box.Envelope.Right() - mapBox.Box.Centroid.X) <= avgX || Math.Abs(x.Box.Envelope.Left() - mapBox.Box.Centroid.X) <= avgX
                     && Math.Abs(x.Box.Envelope.Top() - mapBox.Box.Centroid.X) <= avgY || Math.Abs(x.Box.Envelope.Bottom() - mapBox.Box.Centroid.X) <= avgY
-                    && x.Box.Envelope.Center().Distance(mapBox.Box.Envelope.Center()) <=diagonal
-                ).Select(x=>x.Code).ToList();
+                    && x.Box.Envelope.Center().Distance(mapBox.Box.Envelope.Center()) <= diagonal
+                ).Select(x => x.Code).ToList();
                 //移掉自己
                 mapBox.Neighbors.Remove(mapBox.Code);
             }
             return mapBoxs;
         }
-
 
         /// <summary>
         /// 兩塊地籍合併
@@ -85,31 +74,29 @@ namespace WilJoey.LandMerger.Core
                             && pg.Centroid.Distance(border2) <= _tolerance
                             )
                         {
-                            pg =  pg.Union(polygon1).Union(polygon2) as Polygon;
+                            pg = pg.Union(polygon1).Union(polygon2) as Polygon;
                             list.Add(pg);
                         }
                     }
                 }
-                if (list.Count == 0)
+                switch (list.Count)
                 {
-                    return null;
-                }
-                else if (list.Count == 1)
-                {
-                    return list.First();
-                }
-                else
-                {
-                    var result = list.First();
-                    list.Remove(result);
-                    foreach (var item in list)
-                    {
-                        result = result.Union(item) as Polygon;
-                    }
-                    return result;
+                    case 0:
+                        return null;
+                    case 1:
+                        return list.First();
+                    default:
+                        var result = list.First();
+                        list.Remove(result);
+                        foreach (var item in list)
+                        {
+                            result = result.Union(item) as Polygon;
+                        }
+                        return result;
                 }
             }
         }
+
         /// <summary>
         /// 三塊地籍合併
         /// </summary>
@@ -118,7 +105,7 @@ namespace WilJoey.LandMerger.Core
         public Polygon ThreePieces(List<PolyLand> lands)
         {
             var polys = new List<Polygon>();
-            while (lands.Count >0)
+            while (lands.Count > 0)
             {
                 var land = lands.First();
                 lands.Remove(land);
@@ -160,26 +147,6 @@ namespace WilJoey.LandMerger.Core
         public Polygon GetConvexHull(LineString line1, LineString line2)
         {
             return line1.Union(line2).ConvexHull() as Polygon;
-            //var coords1 = new List<Coordinate>
-            //{
-            //    line1.StartPoint.Coordinate,
-            //    line1.EndPoint.Coordinate,
-            //    line2.StartPoint.Coordinate,
-            //    line2.EndPoint.Coordinate,
-            //    line1.StartPoint.Coordinate
-            //};
-            //var pg1 = new Polygon(coords1);
-
-            //var coords2 = new List<Coordinate>
-            //{
-            //    line1.StartPoint.Coordinate,
-            //    line1.EndPoint.Coordinate,
-            //    line2.EndPoint.Coordinate,
-            //    line2.StartPoint.Coordinate,
-            //    line1.StartPoint.Coordinate
-            //};
-            //var pg2 = new Polygon(coords2);
-            //return pg1.Area > pg2.Area ? pg1 : pg2;
         }
 
         /// <summary>
@@ -188,7 +155,7 @@ namespace WilJoey.LandMerger.Core
         /// <param name="polyLand">要判斷的多邊形</param>
         public void SetupBorders(PolyLand polyLand)
         {
-            polyLand.Borders=new List<LineString>();
+            polyLand.Borders = new List<LineString>();
             var boundary = MapBoxs.First(x => x.Code == polyLand.Code);
             LineString prev = null;
             for (var i = 1; i < polyLand.Points.Count; i++)
@@ -240,7 +207,5 @@ namespace WilJoey.LandMerger.Core
                 start, end
             });
         }
-
-        
     }
 }
