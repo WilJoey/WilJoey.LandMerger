@@ -20,6 +20,7 @@ namespace WilJoey.LandMerger.CoreTests
         {
             _lands = GeometryFileTest.SetupLands();
             _boundaries = GeometryFileTest.SetupBoundary();
+            //2013
             //var lands = _lands.GroupBy(x => x.LandNo8).Where(x => x.Count() == 5);
             //foreach (var land in lands)
             //{
