@@ -20,7 +20,7 @@ namespace WilJoey.LandMerger.CoreTests
         {
             _lands = GeometryFileTest.SetupLands();
             _boundaries = GeometryFileTest.SetupBoundary();
-            //var lands = _lands.GroupBy(x => x.LandNo8).Where(x => x.Count() == 3);
+            //var lands = _lands.GroupBy(x => x.LandNo8).Where(x => x.Count() == 5);
             //foreach (var land in lands)
             //{
             //    System.Diagnostics.Debug.WriteLine(land.Key);
@@ -48,13 +48,84 @@ namespace WilJoey.LandMerger.CoreTests
         public void ThreePieces_三個多邊形合併_沒有相交()
         {
             //00010003, 03760002
-            var lands = _lands.Where(x => x.LandNo8 == "00010003").Select(x => new PolyLand
+            var lands = _lands.Where(x => x.LandNo8 == "03760002").Select(x => new PolyLand
             {
                 Code = x.Boundary,
                 Points = x.Points
             }).ToList();
             var merger = new Merger(_boundaries);
             Polygon polygon = merger.ThreePieces(lands);
+            //Assert.AreEqual(4553.815324, polygon.Area, 0.000001);
+            
+            foreach (var land in lands)
+            {
+                var pg = new Polygon(land.Points);
+                Assert.True(polygon.Contains(pg));
+            }
+        }
+        
+        [Test]
+        public void ThreePieces_四個多邊形合併()
+        {
+            var lands = _lands.Where(x => x.LandNo8 == "01310002").Select(x => new PolyLand
+            {
+                Code = x.Boundary,
+                Points = x.Points
+            }).ToList();
+            var merger = new Merger(_boundaries);
+            var polygon = merger.ThreePieces(lands);
+            foreach (var land in lands)
+            {
+                var pg = new Polygon(land.Points);
+                Assert.True(polygon.Contains(pg));
+            }
+        }
+        [Test]
+        public void ThreePieces_五個多邊形合併()
+        {
+            //04050000, 04060000, 01440007
+            var lands = _lands.Where(x => x.LandNo8 == "01440007").Select(x => new PolyLand
+            {
+                Code = x.Boundary,
+                Points = x.Points
+            }).ToList();
+            var merger = new Merger(_boundaries);
+            var polygon = merger.ThreePieces(lands);
+            foreach (var land in lands)
+            {
+                var pg = new Polygon(land.Points);
+                Assert.True(polygon.Contains(pg));
+            }
+        }
+        [Test]
+        public void ThreePieces_MoreThenFive()
+        {
+            //04020000, 13940000
+            var lands = _lands.Where(x => x.LandNo8 == "13940000").Select(x => new PolyLand
+            {
+                Code = x.Boundary,
+                Points = x.Points
+            }).ToList();
+            var merger = new Merger(_boundaries);
+            var polygon = merger.ThreePieces(lands);
+            foreach (var land in lands)
+            {
+                var pg = new Polygon(land.Points);
+                Assert.True(polygon.Contains(pg));
+            }
+        }
+        [Test]
+        public void SetupBorders_()
+        {
+            var lands = _lands.Where(x => x.LandNo8 == "01310002").Select(x => new PolyLand
+            {
+                Code = x.Boundary,
+                Points = x.Points
+            }).ToList();
+            var merger = new Merger(_boundaries);
+            var polyLand = lands.First();
+            merger.SetupBorders(polyLand);
+            Assert.AreEqual(2, polyLand.Borders.Count);
         }
 
 

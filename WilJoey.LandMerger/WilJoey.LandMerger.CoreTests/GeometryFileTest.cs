@@ -6,6 +6,7 @@ using System.Linq;
 using DotSpatial.Topology;
 using Newtonsoft.Json;
 using NUnit.Framework;
+using WilJoey.LandMerger.Core;
 using WilJoey.LandMerger.Core.Entity;
 
 namespace WilJoey.LandMerger.CoreTests
@@ -39,9 +40,6 @@ namespace WilJoey.LandMerger.CoreTests
                 foreach (var land in lands)
                 {
                     land.Geometry = new Polygon(land.Points);
-                    //land.Lines.ForEach(x =>
-                    //    x.Geometry = new LineString(new List<Coordinate> { x.StartPoint, x.EndPoint })
-                    //);
                 }
                 return lands;
             }
@@ -66,6 +64,7 @@ namespace WilJoey.LandMerger.CoreTests
             Assert.AreEqual(45, _lands.Count());
             var filter = _lands.GroupBy(x => x.LandNo8);
             Assert.AreEqual(10, filter.Count());
+            var merger = new Merger(_boundaries);
         }
     }
 }

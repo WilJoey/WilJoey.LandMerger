@@ -11,17 +11,18 @@ namespace WilJoey.LandMerger.Core
     public class Merger
     {
         private readonly double _tolerance = 0.3;
-        private readonly List<MapBox> _mapBoxs;
+        //private readonly List<MapBox> MapBoxs;
+        public List<MapBox> MapBoxs { get; set; }
         /// <summary>
         /// 圖幅框清單
         /// </summary>
-        private readonly List<Boundary> _boundaries;
+        //private readonly List<Boundary> _boundaries;
 
         public Merger(List<Boundary> boundaries)
         {
-            _boundaries = boundaries;
+            //_boundaries = boundaries;
 
-            _mapBoxs = SetupMapBox(boundaries);
+            MapBoxs = SetupMapBox(boundaries);
             
         }
 
@@ -31,6 +32,7 @@ namespace WilJoey.LandMerger.Core
             {
                 Code=x.FullCode,
                 Points = x.BorderLine,
+                Extents = x.Extents,
                 Box = new Polygon(x.BorderLine)
             }).ToList();
 
@@ -48,6 +50,8 @@ namespace WilJoey.LandMerger.Core
                     && Math.Abs(x.Box.Envelope.Top() - mapBox.Box.Centroid.X) <= avgY || Math.Abs(x.Box.Envelope.Bottom() - mapBox.Box.Centroid.X) <= avgY
                     && x.Box.Envelope.Center().Distance(mapBox.Box.Envelope.Center()) <=diagonal
                 ).Select(x=>x.Code).ToList();
+                //移掉自己
+                mapBox.Neighbors.Remove(mapBox.Code);
             }
             return mapBoxs;
         }
@@ -71,8 +75,39 @@ namespace WilJoey.LandMerger.Core
             {
                 SetupBorders(polyLand1);
                 SetupBorders(polyLand2);
-                var pg = GetConvexHull(polyLand1.Borders.First(), polyLand2.Borders.First());
-                return pg.Union(polygon1).Union(polygon2) as Polygon;
+                var list = new List<Polygon>();
+                foreach (var border1 in polyLand1.Borders)
+                {
+                    foreach (var border2 in polyLand2.Borders)
+                    {
+                        var pg = GetConvexHull(border1, border2);
+                        if (pg.Centroid.Distance(border1) <= _tolerance
+                            && pg.Centroid.Distance(border2) <= _tolerance
+                            )
+                        {
+                            pg =  pg.Union(polygon1).Union(polygon2) as Polygon;
+                            list.Add(pg);
+                        }
+                    }
+                }
+                if (list.Count == 0)
+                {
+                    return null;
+                }
+                else if (list.Count == 1)
+                {
+                    return list.First();
+                }
+                else
+                {
+                    var result = list.First();
+                    list.Remove(result);
+                    foreach (var item in list)
+                    {
+                        result = result.Union(item) as Polygon;
+                    }
+                    return result;
+                }
             }
         }
         /// <summary>
@@ -83,11 +118,39 @@ namespace WilJoey.LandMerger.Core
         public Polygon ThreePieces(List<PolyLand> lands)
         {
             var polys = new List<Polygon>();
-            foreach (var land in lands)
+            while (lands.Count >0)
             {
-                
+                var land = lands.First();
+                lands.Remove(land);
+                var codes = MapBoxs.First(x => x.Code == land.Code).Neighbors;
+                var boxs = MapBoxs.Where(x => codes.Contains(x.Code));
+                foreach (var box in boxs)
+                {
+                    var neighbors = lands.Where(x => x.Code == box.Code);
+                    foreach (var neighbor in neighbors)
+                    {
+                        //System.Diagnostics.Debug.WriteLine();
+                        var merged = TwoPieces(land, neighbor);
+                        if (merged != null)
+                        {
+                            polys.Add(merged);
+                        }
+                    }
+                }
+            }
+            if (polys.Count == 0)
+            {
+                return null;
+            }
+            else
+            {
+                var result = polys.First();
+                polys.Remove(result);
+                result = polys.Aggregate(result, (current, poly) => current.Union(poly) as Polygon);
+                return result;
             }
         }
+
         /// <summary>
         /// 兩個未相交多邊形合併時，依照邊界線先產出中間空白的多邊形
         /// </summary>
@@ -126,7 +189,7 @@ namespace WilJoey.LandMerger.Core
         public void SetupBorders(PolyLand polyLand)
         {
             polyLand.Borders=new List<LineString>();
-            var boundary = _boundaries.First(x => x.FullCode == polyLand.Code);
+            var boundary = MapBoxs.First(x => x.Code == polyLand.Code);
             LineString prev = null;
             for (var i = 1; i < polyLand.Points.Count; i++)
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using DotSpatial.Topology;
+using Newtonsoft.Json;
 
 namespace WilJoey.LandMerger.Core.Entity
 {
@@ -20,6 +21,12 @@ namespace WilJoey.LandMerger.Core.Entity
         /// 節點清單
         /// </summary>
         public List<Coordinate> Points { get; set; }
+
+        /// <summary>
+        /// 圖幅框
+        /// </summary>
+        [JsonIgnore]
+        public LineString Extents { get; set; }
 
         /// <summary>
         /// 圖幅框
