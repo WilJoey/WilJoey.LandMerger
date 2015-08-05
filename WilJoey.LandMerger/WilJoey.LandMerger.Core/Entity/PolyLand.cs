@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using DotSpatial.Topology;
+using Newtonsoft.Json;
 
 namespace WilJoey.LandMerger.Core.Entity
 {
@@ -18,9 +19,11 @@ namespace WilJoey.LandMerger.Core.Entity
         /// </summary>
         public List<Coordinate> Points { get; set; }
 
+
         /// <summary>
         /// 此多邊形的邊界線，由圖幅BOUNDARY判斷出來
         /// </summary>
+        [JsonIgnore]
         public List<LineString> Borders { get; set; }
     }
 }

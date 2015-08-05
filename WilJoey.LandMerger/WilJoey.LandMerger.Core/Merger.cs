@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using DotSpatial;
 using DotSpatial.Topology;
 using WilJoey.LandMerger.Core.Entity;
 
@@ -14,6 +17,11 @@ namespace WilJoey.LandMerger.Core
         public Merger(List<Boundary> boundaries)
         {
             MapBoxs = SetupMapBox(boundaries);
+            //var temp = "INSERT INTO map_box(section, code, the_geom) VALUES ('0302', '{0}', st_geomfromtext('{1}'));";
+            //foreach (var mapBox in MapBoxs)
+            //{
+            //    System.Diagnostics.Debug.WriteLine(temp, mapBox.Code, mapBox.Box);
+            //}
         }
 
         private List<MapBox> SetupMapBox(List<Boundary> boundaries)
@@ -26,20 +34,12 @@ namespace WilJoey.LandMerger.Core
                 Box = new Polygon(x.BorderLine)
             }).ToList();
 
-            var avgX = mapBoxs.Average(x => (x.Box.Envelope.Right() - x.Box.Envelope.Left()) / 2);
-            var avgY = mapBoxs.Average(x => (x.Box.Envelope.Top() - x.Box.Envelope.Bottom()) / 2);
-            //對角線長度
-            var diagonal = Math.Sqrt(avgX * avgX + avgY * avgY) * 0.9;
-            avgX *= 1.1;
-            avgY *= 1.1;
-
+            var avgX = mapBoxs.Average(x => x.Box.Envelope.Width) ;
+            var avgY = mapBoxs.Average(x => x.Box.Envelope.Height) ;
+            var centerDist = Math.Max(avgX, avgY)*1.1;
             foreach (var mapBox in mapBoxs)
             {
-                mapBox.Neighbors = mapBoxs.Where(x =>
-                    Math.Abs(x.Box.Envelope.Right() - mapBox.Box.Centroid.X) <= avgX || Math.Abs(x.Box.Envelope.Left() - mapBox.Box.Centroid.X) <= avgX
-                    && Math.Abs(x.Box.Envelope.Top() - mapBox.Box.Centroid.X) <= avgY || Math.Abs(x.Box.Envelope.Bottom() - mapBox.Box.Centroid.X) <= avgY
-                    && x.Box.Envelope.Center().Distance(mapBox.Box.Envelope.Center()) <= diagonal
-                ).Select(x => x.Code).ToList();
+                mapBox.Neighbors = mapBoxs.Where(x => x.Box.Envelope.Center().Distance(mapBox.Box.Envelope.Center()) <= centerDist).Select(x => x.Code).ToList();
                 //移掉自己
                 mapBox.Neighbors.Remove(mapBox.Code);
             }
@@ -134,8 +134,39 @@ namespace WilJoey.LandMerger.Core
                 var result = polys.First();
                 polys.Remove(result);
                 result = polys.Aggregate(result, (current, poly) => current.Union(poly) as Polygon);
+                result = CleanupPolygon(result);
                 return result;
             }
+        }
+
+        /// <summary>
+        /// 1.將多邊形內部的小碎地(小於1平方公尺)移除
+        /// 2.移除尖角(小於0.5度)
+        /// </summary>
+        /// <param name="polygon"></param>
+        public Polygon CleanupPolygon(Polygon polygon)
+        {
+            if (polygon.Holes.Any(x => x.Envelope.Area() < 1))
+            {
+                polygon = new Polygon(polygon.ExteriorRing.Coordinates);
+                var holes = polygon.Holes.Where(x => x.Envelope.Area() > 1);
+                foreach (var hole in holes)
+                {
+                    polygon.Union(new Polygon(hole.Coordinates));
+                }
+            }
+            return polygon;
+            //var coors = polygon.ExteriorRing.Coordinates;
+            //var angles = new List<Double>();
+            //for (var i = 1; i < coors.Count - 1; i++)
+            //{
+            //    var line1 = new LineSegment(coors[i - 1], coors[i]);
+            //    var line2 = new LineSegment(coors[i], coors[i + 1]);
+            //    angles.Add(Math.Abs(line2.Angle-line1.Angle));
+            //}
+            //System.Diagnostics.Debug.WriteLine(angles.OrderByDescending(x=>x).Skip(1).First());
+            //System.Diagnostics.Debug.WriteLine(angles.Max());
+
         }
 
         /// <summary>
@@ -166,7 +197,20 @@ namespace WilJoey.LandMerger.Core
                     if (prev != null)
                     {
                         //prev = prev.Union(ls) as LineString;
-                        prev.Coordinates.Add(polyLand.Points[i]);
+                        var prevAngle = Convert.ToInt32(prev.Angle);
+                        var lsAngle = Convert.ToInt32(ls.Angle);
+                        var angle = Math.Abs(prevAngle - lsAngle);
+
+                        if (angle == 90 || angle == 270)
+                        {
+                            //如果為垂直相交則必須分成兩段
+                            polyLand.Borders.Add(ls);
+                            prev = ls;
+                        }
+                        else
+                        {
+                            prev.Coordinates.Add(polyLand.Points[i]);   
+                        }
                     }
                     else
                     {
