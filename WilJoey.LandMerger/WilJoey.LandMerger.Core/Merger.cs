@@ -12,11 +12,11 @@ namespace WilJoey.LandMerger.Core
     public class Merger
     {
         private readonly double _tolerance = 0.3;
-        public List<MapBox> MapBoxs { get; set; }
+        private readonly List<MapBox> _mapBoxs;
 
         public Merger(List<Boundary> boundaries)
         {
-            MapBoxs = SetupMapBox(boundaries);
+            _mapBoxs = SetupMapBox(boundaries);
             //var temp = "INSERT INTO map_box(section, code, the_geom) VALUES ('0302', '{0}', st_geomfromtext('{1}'));";
             //foreach (var mapBox in MapBoxs)
             //{
@@ -110,8 +110,8 @@ namespace WilJoey.LandMerger.Core
             {
                 var land = list.First();
                 list.Remove(land);
-                var codes = MapBoxs.First(x => x.Code == land.Code).Neighbors;
-                var boxs = MapBoxs.Where(x => codes.Contains(x.Code));
+                var codes = _mapBoxs.First(x => x.Code == land.Code).Neighbors;
+                var boxs = _mapBoxs.Where(x => codes.Contains(x.Code));
                 foreach (var box in boxs)
                 {
                     var neighbors = list.Where(x => x.Code == box.Code);
@@ -190,7 +190,7 @@ namespace WilJoey.LandMerger.Core
         public void SetupBorders(PolyLand polyLand)
         {
             polyLand.Borders = new List<LineString>();
-            var boundary = MapBoxs.First(x => x.Code == polyLand.Code);
+            var boundary = _mapBoxs.First(x => x.Code == polyLand.Code);
             LineString prev = null;
             for (var i = 1; i < polyLand.Points.Count; i++)
             {

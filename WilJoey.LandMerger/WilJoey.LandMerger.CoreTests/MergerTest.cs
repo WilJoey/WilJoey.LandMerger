@@ -85,7 +85,7 @@ namespace WilJoey.LandMerger.CoreTests
         [Test]
         public void ThreePieces_多邊形單獨測試()
         {
-            TestThreePieces("04050000", 20126.188562);
+            TestThreePieces("04060000", 20657.584259);
 
         }
 
