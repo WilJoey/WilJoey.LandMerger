@@ -56,12 +56,12 @@ namespace WilJoey.LandMerger.Core
         {
             var polygon1 = new Polygon(polyLand1.Points);
             var polygon2 = new Polygon(polyLand2.Points);
-            if (polygon1.Intersects(polygon2) || polygon1.Touches(polygon2))
-            {
-                return polygon1.Union(polygon2) as Polygon;
-            }
-            else
-            {
+            //if (polygon1.Intersects(polygon2) || polygon1.Touches(polygon2))
+            //{
+            //    return polygon1.Union(polygon2) as Polygon;
+            //}
+            //else
+            //{
                 SetupBorders(polyLand1);
                 SetupBorders(polyLand2);
                 var list = new List<Polygon>();
@@ -94,7 +94,7 @@ namespace WilJoey.LandMerger.Core
                         }
                         return result;
                 }
-            }
+            //}
         }
 
         /// <summary>
@@ -105,15 +105,16 @@ namespace WilJoey.LandMerger.Core
         public Polygon ThreePieces(List<PolyLand> lands)
         {
             var polys = new List<Polygon>();
-            while (lands.Count > 0)
+            var list = lands.OrderBy(x => x.Code).ToList();
+            while (list.Count > 0)
             {
-                var land = lands.First();
-                lands.Remove(land);
+                var land = list.First();
+                list.Remove(land);
                 var codes = MapBoxs.First(x => x.Code == land.Code).Neighbors;
                 var boxs = MapBoxs.Where(x => codes.Contains(x.Code));
                 foreach (var box in boxs)
                 {
-                    var neighbors = lands.Where(x => x.Code == box.Code);
+                    var neighbors = list.Where(x => x.Code == box.Code);
                     foreach (var neighbor in neighbors)
                     {
                         //System.Diagnostics.Debug.WriteLine();
@@ -133,7 +134,19 @@ namespace WilJoey.LandMerger.Core
             {
                 var result = polys.First();
                 polys.Remove(result);
-                result = polys.Aggregate(result, (current, poly) => current.Union(poly) as Polygon);
+                //result = polys.Aggregate(result, (current, poly) => current.Union(poly) as Polygon);
+                foreach (var poly in polys)
+                {
+                    try
+                    {
+                        result = result.Union(poly) as Polygon;
+                    }
+                    catch (Exception)
+                    {
+                        //TODO write log
+                    }
+                    
+                }
                 result = CleanupPolygon(result);
                 return result;
             }
@@ -201,7 +214,7 @@ namespace WilJoey.LandMerger.Core
                         var lsAngle = Convert.ToInt32(ls.Angle);
                         var angle = Math.Abs(prevAngle - lsAngle);
 
-                        if (angle == 90 || angle == 270)
+                        if ((angle >= 89 && angle <= 91) || angle >= 269 && angle <= 271)
                         {
                             //如果為垂直相交則必須分成兩段
                             polyLand.Borders.Add(ls);
