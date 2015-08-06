@@ -117,7 +117,6 @@ namespace WilJoey.LandMerger.Core
                     var neighbors = list.Where(x => x.Code == box.Code);
                     foreach (var neighbor in neighbors)
                     {
-                        //System.Diagnostics.Debug.WriteLine();
                         var merged = TwoPieces(land, neighbor);
                         if (merged != null)
                         {
@@ -139,7 +138,10 @@ namespace WilJoey.LandMerger.Core
                 {
                     try
                     {
-                        result = result.Union(poly) as Polygon;
+                        if (result != null)
+                        {
+                            result = result.Union(poly) as Polygon;
+                        }
                     }
                     catch (Exception)
                     {
@@ -154,7 +156,6 @@ namespace WilJoey.LandMerger.Core
 
         /// <summary>
         /// 1.將多邊形內部的小碎地(小於1平方公尺)移除
-        /// 2.移除尖角(小於0.5度)
         /// </summary>
         /// <param name="polygon"></param>
         public Polygon CleanupPolygon(Polygon polygon)
@@ -169,17 +170,6 @@ namespace WilJoey.LandMerger.Core
                 }
             }
             return polygon;
-            //var coors = polygon.ExteriorRing.Coordinates;
-            //var angles = new List<Double>();
-            //for (var i = 1; i < coors.Count - 1; i++)
-            //{
-            //    var line1 = new LineSegment(coors[i - 1], coors[i]);
-            //    var line2 = new LineSegment(coors[i], coors[i + 1]);
-            //    angles.Add(Math.Abs(line2.Angle-line1.Angle));
-            //}
-            //System.Diagnostics.Debug.WriteLine(angles.OrderByDescending(x=>x).Skip(1).First());
-            //System.Diagnostics.Debug.WriteLine(angles.Max());
-
         }
 
         /// <summary>
